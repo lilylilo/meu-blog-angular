@@ -1,0 +1,95 @@
+// app.module.ts (Módulo principal)
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { AppComponent } from './app.component';
+import { BlogModule } from './blog/blog.module';
+import { RouterModule, Routes } from '@angular/router';
+
+const routes: Routes = [
+  { path: '', redirectTo: 'blog', pathMatch: 'full' },
+  { path: 'blog', loadChildren: () => import('./blog/blog.module').then(m => m.BlogModule) }
+];
+
+@NgModule({
+  declarations: [AppComponent],
+  imports: [BrowserModule, RouterModule.forRoot(routes), BlogModule],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+
+// blog.module.ts (Módulo do blog)
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { BlogListComponent } from './blog-list/blog-list.component';
+import { BlogPostComponent } from './blog-post/blog-post.component';
+import { RouterModule, Routes } from '@angular/router';
+
+const routes: Routes = [
+  { path: '', component: BlogListComponent },
+  { path: ':id', component: BlogPostComponent }
+];
+
+@NgModule({
+  declarations: [BlogListComponent, BlogPostComponent],
+  imports: [CommonModule, RouterModule.forChild(routes)],
+})
+export class BlogModule { }
+
+// blog.service.ts (Serviço para gerenciar posts)
+import { Injectable } from '@angular/core';
+
+@Injectable({ providedIn: 'root' })
+export class BlogService {
+  private posts = [
+    { id: 1, title: 'Post 1', content: 'Conteúdo do primeiro post' },
+    { id: 2, title: 'Post 2', content: 'Conteúdo do segundo post' }
+  ];
+
+  getPosts() {
+    return this.posts;
+  }
+
+  getPostById(id: number) {
+    return this.posts.find(post => post.id === id);
+  }
+}
+
+// blog-list.component.ts (Lista de posts)
+import { Component } from '@angular/core';
+import { BlogService } from '../blog.service';
+
+@Component({
+  selector: 'app-blog-list',
+  template: `<h2>Blog</h2>
+             <ul>
+               <li *ngFor="let post of posts">
+                 <a [routerLink]="['/blog', post.id]">{{ post.title }}</a>
+               </li>
+             </ul>`
+})
+export class BlogListComponent {
+  posts = this.blogService.getPosts();
+
+  constructor(private blogService: BlogService) {}
+}
+
+// blog-post.component.ts (Post individual)
+import { Component } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { BlogService } from '../blog.service';
+
+@Component({
+  selector: 'app-blog-post',
+  template: `<h2>{{ post?.title }}</h2>
+             <p>{{ post?.content }}</p>
+             <a routerLink="/blog">Voltar</a>`
+})
+export class BlogPostComponent {
+  post;
+
+  constructor(private route: ActivatedRoute, private blogService: BlogService) {
+    const id = Number(this.route.snapshot.paramMap.get('id'));
+    this.post = this.blogService.getPostById(id);
+  }
+}
